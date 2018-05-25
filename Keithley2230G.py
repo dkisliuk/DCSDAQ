@@ -75,7 +75,6 @@ class Keithley2230G:
 
     #Read voltage from channel 'chan' (1 2 or 3) and return
     def readVOLT(self, chan=1):
-        #print 'Read Voltage of Channel %d' %chan
         self.sendCommand(':INST:SEL CH%d' %chan, 'write')
         self.sendCommand(':MEAS:SCAL:VOLT:DC?', 'write')
         self.sendCommand(':FETC:VOLT:DC?', 'write')
@@ -89,7 +88,6 @@ class Keithley2230G:
 
     #Read current from channel 'chan' (1 2 or 3) and return
     def readCURR(self, chan=1):
-        #print 'Read Voltage of Channel %d' %chan
         self.sendCommand(':INST:SEL CH%d' %chan, 'write')
         self.sendCommand(':MEAS:SCAL:CURR:DC?', 'write')
         self.sendCommand(':FETC:VOLT:DC?', 'write')
@@ -97,7 +95,7 @@ class Keithley2230G:
         try:
             self.device.close()
             self.device.open()
-            return self.device.read().split('\n')[0] #For some reason this operation gives a bunch of garbage after the voltage
+            return self.device.read().split('\n')[0] #For some reason this operation gives a bunch of garbage after the current
         except Exception as e:
             return False
 
@@ -111,6 +109,37 @@ class Keithley2230G:
              self.volt[2] = volt3
         print 'Setting Voltages to %f  %f  %f'  %(self.volt[0], self.volt[1], self.volt[2])
         self.device.write(':APP:VOLT %f,%f,%f\n' %(self.volt[0], self.volt[1], self.volt[2]) )
+
+    #Ramp voltage over a period of time
+    def rampVOLT(self, chan=1, stepSize=1.0, wait=1.0, finalVolt=5.0):
+        print 'Ramping voltage of channel %d' %chan
+        if chan is not 1 and chan is not 2 and chan is not 3:
+            print '"chan" must be 1, 2, or 3'
+            return
+        if stepSize > 0:
+            while self.volt[chan-1] < finalVolt:
+                 stepVolt = self.volt[chan-1] + stepSize
+                 if stepVolt > finalVolt:
+                     stepVolt = finalVolt
+                 if chan == 1:
+                     self.setVOLT(volt1=stepVolt) 
+                 if chan == 2:
+                     self.setVOLT(volt2=stepVolt)
+                 if chan == 3:
+                     self.setVOLT(volt3=stepVolt)
+                 time.sleep(wait)
+        elif stepSize < 0:
+            while self.volt[chan-1] > finalVolt:
+                 stepVolt = self.volt[chan-1] + stepSize
+                 if stepVolt < finalVolt:
+                     stepVolt = finalVolt
+                 if chan == 1:
+                     self.setVOLT(volt1=stepVolt) 
+                 if chan == 2:
+                     self.setVOLT(volt2=stepVolt)
+                 if chan == 3:
+                     self.setVOLT(volt3=stepVolt)
+                 time.sleep(wait)
 
     # Set current for device's three channels
     def setCURR(self, curr1='none', curr2='none', curr3='none'):
@@ -132,6 +161,7 @@ class Keithley2230G:
         self.sendCommand(':SYST:REM', 'write')
 #end Keithley2230G class definition
 
+# 'device' is the instance of Keithley2230G object you want read
 def getVOLT(device, chan=1):
     print 'Read Voltage of Channel %d' %chan
     voltage = False
@@ -139,6 +169,7 @@ def getVOLT(device, chan=1):
         voltage = device.readVOLT(chan) #Returns false in case of exception
     return voltage
 
+# 'device' is the instance of Keithley2230G object you want read
 def getCURR(device, chan=1):
     print 'Read Current of Channel %d' %chan
     current = False
@@ -156,7 +187,7 @@ if __name__ == '__main__':
     keith.powerON()
 
     #Set voltage of each channel
-    keith.setVOLT(volt1=1, volt2=0.5, volt3=0.3)
+    keith.setVOLT(volt1=1.3, volt2=0.5, volt3=0.3)
     time.sleep(1)
 
     #Set current of each channel
@@ -172,6 +203,10 @@ if __name__ == '__main__':
     print getCURR(keith, chan=1)
     print getCURR(keith, chan=2)
     print getCURR(keith, chan=3)
+
+    #Ramp voltage of channel 1
+    keith.rampVOLT(chan=1, finalVolt=10.0)
+    keith.rampVOLT(chan=1, stepSize=-1, finalVolt = 0.0)
 
     time.sleep(1)
     keith.powerOFF()

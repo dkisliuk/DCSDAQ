@@ -116,30 +116,18 @@ class Keithley2230G:
         if chan is not 1 and chan is not 2 and chan is not 3:
             print '"chan" must be 1, 2, or 3'
             return
-        if stepSize > 0:
-            while self.volt[chan-1] < finalVolt:
-                 stepVolt = self.volt[chan-1] + stepSize
-                 if stepVolt > finalVolt:
-                     stepVolt = finalVolt
-                 if chan == 1:
-                     self.setVOLT(volt1=stepVolt) 
-                 if chan == 2:
-                     self.setVOLT(volt2=stepVolt)
-                 if chan == 3:
-                     self.setVOLT(volt3=stepVolt)
-                 time.sleep(wait)
-        elif stepSize < 0:
-            while self.volt[chan-1] > finalVolt:
-                 stepVolt = self.volt[chan-1] + stepSize
-                 if stepVolt < finalVolt:
-                     stepVolt = finalVolt
-                 if chan == 1:
-                     self.setVOLT(volt1=stepVolt) 
-                 if chan == 2:
-                     self.setVOLT(volt2=stepVolt)
-                 if chan == 3:
-                     self.setVOLT(volt3=stepVolt)
-                 time.sleep(wait)
+        #Ramp up if stepSize > 0 and Ramp down if stepSize < 0
+        while (self.volt[chan-1] < finalVolt if stepSize > 0 else self.volt[chan-1] > finalVolt):
+             stepVolt = self.volt[chan-1] + stepSize
+             if (stepVolt > finalVolt if stepSize >0 else stepVolt < finalVolt):
+                 stepVolt = finalVolt
+             if chan == 1:
+                 self.setVOLT(volt1=stepVolt) 
+             if chan == 2:
+                 self.setVOLT(volt2=stepVolt)
+             if chan == 3:
+                 self.setVOLT(volt3=stepVolt)
+             time.sleep(wait)
 
     # Set current for device's three channels
     def setCURR(self, curr1='none', curr2='none', curr3='none'):
@@ -206,7 +194,7 @@ if __name__ == '__main__':
 
     #Ramp voltage of channel 1
     keith.rampVOLT(chan=1, finalVolt=10.0)
-    keith.rampVOLT(chan=1, stepSize=-1, finalVolt = 0.0)
+    keith.rampVOLT(chan=1, stepSize=-1, finalVolt = 0.4)
 
     time.sleep(1)
     keith.powerOFF()
